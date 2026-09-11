@@ -1,0 +1,25 @@
+{
+  "name": "tacta-counter",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "debug": "tsx scripts/debug.ts",
+    "eval": "tsx scripts/eval.ts",
+    "eval:robust": "tsx scripts/eval-scale.ts && tsx scripts/eval-perturb.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "@types/pngjs": "^6.0.5",
+    "jpeg-js": "^0.4.4",
+    "pngjs": "^7.0.0",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
+  }
+}
