@@ -62,6 +62,16 @@ button:focus-visible,
 button.ghost {
   background: transparent;
 }
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+button.primary:hover:not(:disabled) {
+  background: #d64f8a;
+  border-color: #d64f8a;
+}
 
 .muted {
   color: var(--muted);
@@ -405,6 +415,47 @@ main {
   width: 100%;
   color: var(--danger);
   border-color: #6b2c3a;
+}
+
+/* ---- Install prompt ---- */
+.install {
+  position: fixed;
+  z-index: 10;
+  left: 16px;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  max-width: 520px;
+  margin-inline: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: #1d1d24f5;
+  border: 1px solid #44444f;
+  box-shadow: 0 12px 40px #000a;
+  animation: slide-up 0.35s both;
+}
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+.install img {
+  flex: none;
+  border-radius: 10px;
+}
+.install-text {
+  flex: 1;
+  min-width: 160px;
+  display: grid;
+}
+.install-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .foot {

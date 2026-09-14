@@ -3,6 +3,7 @@ import { COLOR_ORDER, PALETTE, scoresOf, type ColorName, type DetectionResult } 
 import { loadPhoto } from './ui/photo';
 import { PhotoView, type EditorDot, type TapEvent } from './ui/editor';
 import { renderScoreboard } from './ui/scoreboard';
+import { setupInstallPrompt } from './ui/install';
 import type { WorkerRequest, WorkerResponse } from './worker';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -195,6 +196,7 @@ els.marks.addEventListener('click', () => {
 $('zoom-in').addEventListener('click', () => view.zoomBy(1.5));
 $('zoom-out').addEventListener('click', () => view.zoomBy(1 / 1.5));
 $('zoom-fit').addEventListener('click', () => view.fit());
+setupInstallPrompt($('install'), $<HTMLButtonElement>('install-accept'), $<HTMLButtonElement>('install-dismiss'));
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closePopover();
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !els.result.hidden) els.undo.click();
