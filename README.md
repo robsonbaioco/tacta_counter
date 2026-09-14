@@ -16,6 +16,13 @@ centenas de pontinhos brancos. Este projeto resolve isso com uma foto. Você fot
 localStorage/IndexedDB); ela fica só na memória da página e some ao recarregar. Por isso o projeto é um site estático
 hospedado no GitHub Pages.
 
+## Instalar como app (Android)
+
+A página é um PWA. No Chrome do Android, abra a demo e toque em **⋮ → Instalar app** (ou "Adicionar à tela
+inicial"). Ela ganha ícone, abre em tela cheia e funciona **sem internet**. O service worker guarda só os arquivos do
+próprio app (HTML, JS, CSS e ícones), nunca as fotos. Versões novas são baixadas em segundo plano e entram na próxima
+vez que o app for aberto.
+
 ## Como o Tacta é pontuado
 
 Quando todos jogam suas cartas, a partida acaba. Cada jogador soma os **pontos brancos visíveis** nas cartas da
@@ -48,7 +55,8 @@ npm test             # testes (inclui as fotos reais em tests/fixtures)
 npm run eval         # compara com a contagem manual (tests/fixtures/expected.json)
 npm run eval:robust  # mesma avaliação com fotos reescaladas e com cores/brilho alterados
 npm run debug -- tests/fixtures/<foto>.jpeg saida.png [x y w h escala]   # desenha o que o detector viu
-npm run build        # gera dist/
+npm run build        # gera dist/ (com manifest e service worker)
+npm run icons        # regera os ícones PNG em public/ a partir de public/icon.svg
 ```
 
 Para calibrar com mais fotos, coloque-as em `tests/fixtures/` e a pontuação real em `expected.json`.
