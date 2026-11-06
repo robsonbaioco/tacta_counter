@@ -1,11 +1,14 @@
 // Re-runs the evaluation with inputs resampled by several factors, to check that the detector's
 // parameters really adapt to the photo resolution.
+// Parte de `npm run eval:robust`: refaz a avaliação com as fotos reescaladas (0,75x, 1,5x e 2,5x), para
+// conferir que os parâmetros se adaptam à resolução (ver `scale` em detect.ts).
 import { readFileSync } from 'node:fs';
 import { readJpeg } from './nodeImage';
 import { detectCandidates } from '../src/cv/detect';
 import { assignColors } from '../src/cv/palette';
 import type { RGBAImage } from '../src/cv/types';
 
+/** Reescala a imagem pelo fator f com interpolação bilinear. */
 function resample(img: RGBAImage, f: number): RGBAImage {
   const w = Math.round(img.width * f), h = Math.round(img.height * f);
   const out = new Uint8ClampedArray(w * h * 4);

@@ -1,3 +1,6 @@
+// Funções de cor usadas pelo detector: conversão RGB -> HSV e contas com matiz, que é um ângulo
+// (0° e 359° são vizinhos, então diferença e média precisam ser circulares). Usado por image.ts,
+// classify.ts e palette.ts.
 /** Hue in degrees [0,360), saturation [0,1], value [0,255]. */
 export function rgbToHsv(r: number, g: number, b: number): [number, number, number] {
   const max = Math.max(r, g, b);

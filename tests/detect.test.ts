@@ -1,4 +1,7 @@
 // End-to-end check of the detector on real end-of-game photos, against scores counted by hand.
+// Teste de ponta a ponta nas fotos reais de tests/fixtures/: mesmas cores e placar a até ±3 da
+// contagem manual (expected.json), estabilidade com mudança de cor/brilho e uma foto sem gabarito
+// (mesa de vidro) que só precisa dar cinco cores plausíveis.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { readJpeg } from '../scripts/nodeImage';

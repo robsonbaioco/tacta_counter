@@ -1,8 +1,14 @@
+// Medidas da vizinhança de cada candidato, usadas por detect.ts para aceitar ou recusar:
+// - estimateCardBackground: cor do "preto" das cartas nesta foto;
+// - ringPixels/ringStats: o anel de pixels em volta da mancha é colorido? uniforme? de que cor?
+// - RegionMeter: tamanho da área da mesma cor em volta (separa o ponto do ícone central da carta).
 import type { Planes } from './image';
 import { rgbToHsv } from './color';
 
+/** Cor como trio [R, G, B] (0..255). */
 type RGB = [number, number, number];
 
+/** Distância entre a cor do pixel i e `rgb`: maior diferença entre os canais (métrica de Chebyshev). */
 export function rgbDist(p: Planes, i: number, rgb: RGB): number {
   const o = i * 4;
   return Math.max(Math.abs(p.rgba[o] - rgb[0]), Math.abs(p.rgba[o + 1] - rgb[1]), Math.abs(p.rgba[o + 2] - rgb[2]));
@@ -14,6 +20,8 @@ export function rgbDist(p: Planes, i: number, rgb: RGB): number {
  * since on a card every white mark is drawn on it. The table never touches white marks directly.
  */
 export function estimateCardBackground(p: Planes, blobs: { x: number; y: number; r: number; area: number }[], maxVal: number): RGB {
+  // Histograma 3D com 16 níveis por canal (4 bits de R, G e B => 4096 caixas), guardando também a soma
+  // das cores de cada caixa para devolver a média da caixa vencedora.
   const hist = new Uint32Array(4096);
   const sums = new Float64Array(4096 * 3);
   for (const b of blobs) {
@@ -45,6 +53,7 @@ export function estimateCardBackground(p: Planes, blobs: { x: number; y: number;
   return [sums[bestK * 3] / n, sums[bestK * 3 + 1] / n, sums[bestK * 3 + 2] / n];
 }
 
+/** Resumo do anel em volta de um candidato (ver ringStats). */
 export interface RingStats {
   /** Fraction of ring samples that are coloured at all. */
   colored: number;
@@ -67,9 +76,11 @@ export interface ColorContext {
   white: number;
 }
 
+// Para contar como "colorido": croma mínimo absoluto e distância mínima da cor do fundo preto das cartas.
 const MIN_CHROMA = 14;
 const MIN_BG_DIST = 32;
 
+/** O pixel i tem cor de carta: croma suficiente (também relativo ao brilho), não é branco e não é o fundo preto. */
 function isColored(p: Planes, i: number, ctx: ColorContext): boolean {
   return (
     p.chroma[i] >= MIN_CHROMA && p.chroma[i] >= 0.08 * p.val[i] && p.white[i] < ctx.white && rgbDist(p, i, ctx.bg) >= MIN_BG_DIST
@@ -81,6 +92,7 @@ export function colorTolerance(rgb: [number, number, number]): number {
   return Math.max(30, 0.22 * Math.max(rgb[0], rgb[1], rgb[2]));
 }
 
+/** O pixel i está a no máximo `tol` de `rgb` em cada canal. */
 function close(p: Planes, i: number, rgb: [number, number, number], tol: number): boolean {
   const o = i * 4;
   return (
@@ -88,6 +100,7 @@ function close(p: Planes, i: number, rgb: [number, number, number], tol: number)
   );
 }
 
+/** Mediana (ordena o próprio array recebido). */
 function medianOf(xs: number[]): number {
   xs.sort((a, b) => a - b);
   return xs[xs.length >> 1];
@@ -111,6 +124,10 @@ export function ringPixels(p: Planes, cx: number, cy: number, r0: number, r1: nu
   return out;
 }
 
+/**
+ * Analisa o anel em volta de um candidato: que fração é colorida, qual a cor dominante (mediana por canal
+ * das amostras coloridas), que fração está perto dela (uniformidade) e a distância dessa cor ao fundo.
+ */
 export function ringStats(p: Planes, ring: number[], ctx: ColorContext): RingStats {
   const rs: number[] = [], gs: number[] = [], bs: number[] = [];
   for (const i of ring) {
@@ -136,10 +153,12 @@ export function ringStats(p: Planes, ring: number[], ctx: ColorContext): RingSta
  * marks around the centre icon only touch the icon's tiny fill.
  */
 export class RegionMeter {
+  // stamp marca os pixels já visitados com o id da medição atual: evita limpar o array a cada candidato.
   private stamp: Int32Array;
   private id = 0;
   private queue: Int32Array;
 
+  /** Reserva os buffers uma vez por foto (do tamanho da imagem), reaproveitados em todas as medições. */
   constructor(private p: Planes) {
     this.stamp = new Int32Array(p.width * p.height);
     this.queue = new Int32Array(p.width * p.height);
@@ -151,6 +170,7 @@ export class RegionMeter {
     const w = p.width, h = p.height;
     const id = ++this.id;
     const tol = colorTolerance(rgb);
+    // Pixel ainda não visitado nesta medição e com a cor do anel.
     const ok = (i: number) => stamp[i] !== id && close(p, i, rgb, tol);
     let head = 0, tail = 0;
     for (const i of ring) {
@@ -160,6 +180,7 @@ export class RegionMeter {
       }
     }
     let far2 = 0;
+    // Busca em largura (4 vizinhos) a partir do anel; para ao atingir `cap` pixels, que já basta para decidir.
     while (head < tail && tail < cap) {
       const i = queue[head++];
       const x = i % w;

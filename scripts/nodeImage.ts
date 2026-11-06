@@ -4,11 +4,13 @@ import jpeg from 'jpeg-js';
 import { PNG } from 'pngjs';
 import type { RGBAImage } from '../src/cv/types';
 
+/** Lê um JPEG do disco como RGBAImage (mesmo formato que o navegador entrega ao worker). */
 export function readJpeg(path: string): RGBAImage {
   const raw = jpeg.decode(readFileSync(path), { useTArray: true, formatAsRGBA: true });
   return { width: raw.width, height: raw.height, data: new Uint8ClampedArray(raw.data.buffer) };
 }
 
+/** Grava uma RGBAImage como PNG. */
 export function writePng(path: string, img: RGBAImage): void {
   const png = new PNG({ width: img.width, height: img.height });
   png.data = Buffer.from(img.data.buffer, img.data.byteOffset, img.data.byteLength);

@@ -1,6 +1,11 @@
+// Etapa de candidatos: acha manchas claras e compactas na foto (possíveis pontos brancos).
+// Um pixel entra na máscara se for bem mais branco que a média da vizinhança (limiar adaptativo, que
+// tolera luz desigual); os pixels vizinhos são agrupados em manchas (8-conectividade) e cada mancha
+// ganha medidas de forma. detect.ts decide quais manchas são pontos de verdade.
 import type { Planes } from './image';
 import { boxMean } from './image';
 
+/** Uma mancha clara candidata a ponto, com posição (centro de massa) e medidas de forma. */
 export interface Blob {
   x: number;
   y: number;
@@ -15,6 +20,7 @@ export interface Blob {
   peak: number;
 }
 
+/** Parâmetros de sensibilidade de uma passada (detect.ts usa uma frouxa e uma estrita). */
 export interface BlobParams {
   /** Half-size of the local-mean window. */
   win: number;
@@ -33,6 +39,7 @@ export function findBrightBlobs(p: Planes, params: BlobParams): Blob[] {
   for (let i = 0; i < w * h; i++) {
     if (white[i] >= params.minWhite && white[i] > mean[i] + params.delta) mask[i] = 1;
   }
+  // Rotulagem por preenchimento com pilha: 1 = na máscara, 2 = já visitado. Acumula somas para centro e covariância.
   const blobs: Blob[] = [];
   const stack = new Int32Array(w * h);
   for (let start = 0; start < w * h; start++) {
@@ -69,8 +76,12 @@ export function findBrightBlobs(p: Planes, params: BlobParams): Blob[] {
         }
       }
     }
+    // Mancha grande demais (contorno branco, reflexo) é descartada inteira, mas precisava ser percorrida
+    // para não ser revisitada pedaço a pedaço.
     if (tooBig) continue;
     const cx = sx / n, cy = sy / n;
+    // Covariância dos pixels (+1/12 = variância de um pixel quadrado). Os autovalores l1 >= l2 dão o
+    // alongamento: sqrt(l1/l2) = 1 para um disco, maior para traços.
     const vxx = sxx / n - cx * cx + 1 / 12;
     const vyy = syy / n - cy * cy + 1 / 12;
     const vxy = sxy / n - cx * cy;

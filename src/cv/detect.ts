@@ -1,10 +1,21 @@
+// Detecção dos pontos brancos (sem cor de jogador ainda). Pipeline:
+//   1. reduz a foto (WORK_MAX_SIDE) e corrige o balanço de branco (image.ts);
+//   2. passada 1, frouxa (blobs.ts): estima o raio e o brilho típicos de um ponto nesta foto e a cor do
+//      fundo preto das cartas (classify.ts);
+//   3. passada 2, estrita: separa pontos grudados em contornos brancos (comum no amarelo);
+//   4. julga cada candidato das duas passadas por tamanho, forma, anel, contraste, uniformidade e área
+//      colorida em volta; o motivo da recusa fica em `reason` (útil em scripts/debug.ts);
+//   5. remove duplicatas (o mesmo ponto achado pelas duas passadas).
+// palette.ts recebe o resultado e decide as cores. Os limiares ficam em THRESHOLDS.
 import type { RGBAImage } from './types';
 import { computePlanes, limitSize, whiteBalance, type Planes } from './image';
 import { findBrightBlobs, type Blob } from './blobs';
 import { estimateCardBackground, ringPixels, ringStats, RegionMeter, type ColorContext, type RingStats } from './classify';
 
+/** Maior lado da imagem de trabalho, em pixels; fotos maiores são reduzidas (photo.ts usa o mesmo valor). */
 export const WORK_MAX_SIDE = 2400;
 
+/** Mancha julgada: medidas do anel e da área em volta, se foi aceita e o motivo ('ok', 'small', 'dim'...). */
 export interface Candidate extends Blob {
   ring: RingStats;
   /** Size of the same-colour area around the blob, in dot areas. */
@@ -15,6 +26,7 @@ export interface Candidate extends Blob {
   reason: string;
 }
 
+/** Saída de detectCandidates: imagem de trabalho, planos, raio típico, referências de cor e todos os candidatos. */
 export interface RawDetection {
   image: RGBAImage;
   planes: Planes;
@@ -23,6 +35,10 @@ export interface RawDetection {
   candidates: Candidate[];
 }
 
+/**
+ * Limiares do julgamento, calibrados nas fotos de tests/fixtures/. Antes de mudar algum, rode
+ * `npm test`, `npm run eval` e `npm run eval:robust` (ver docs/manutencao.md).
+ */
 export const THRESHOLDS = {
   /** Blob brightness relative to the photo's typical dot brightness. */
   minPeak: 0.5,
@@ -45,20 +61,24 @@ export const THRESHOLDS = {
   regionCap: 400,
 };
 
+/** Anel "apagado": cor perto do fundo preto das cartas ou com pouco croma (reflexo, sombra). */
 function isDull(ring: RingStats, chroma: number = THRESHOLDS.dullChroma): boolean {
   return ring.bgDist < THRESHOLDS.dullBgDist || ring.chroma < chroma;
 }
 
+/** Valor no quantil q (0..1) de uma lista; 0 para lista vazia. */
 function percentile(xs: number[], q: number): number {
   if (!xs.length) return 0;
   const s = [...xs].sort((a, b) => a - b);
   return s[Math.min(s.length - 1, Math.floor(s.length * q))];
 }
 
+/** Mediana de uma lista; 0 para lista vazia. */
 function median(xs: number[]): number {
   return percentile(xs, 0.5);
 }
 
+/** Raios interno e externo do anel analisado em volta de um ponto de raio r (com folga mínima em pixels). */
 function ringRadii(r: number): [number, number] {
   return [r + Math.max(1, 0.35 * r), r + Math.max(2, 0.9 * r)];
 }
@@ -67,6 +87,7 @@ function ringRadii(r: number): [number, number] {
 export function detectCandidates(input: RGBAImage): RawDetection {
   const image = whiteBalance(limitSize(input, WORK_MAX_SIDE));
   const planes = computePlanes(image);
+  // Os tamanhos de janela e de área foram pensados para fotos de ~1600 px; `scale` os adapta à foto real.
   const scale = Math.max(image.width, image.height) / 1600;
 
   // Pass 1: generic parameters, used only to estimate the dot size in this photo.

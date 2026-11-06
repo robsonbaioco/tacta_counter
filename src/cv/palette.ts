@@ -1,7 +1,16 @@
+// Etapa de cores: recebe os pontos aceitos por detect.ts e decide quantas e quais cores de jogador
+// existem na foto, sem lista prévia de quem jogou. Passos (em assignColors):
+//   1. histograma circular das matizes dos anéis, com peso pelo croma (cores lavadas pesam pouco);
+//   2. picos do histograma = cores candidatas (no máximo 6; os mais próximos são fundidos);
+//   3. cada ponto vai para o pico de matiz mais próxima;
+//   4. um grupo pode ser dividido em dois (trySplit) quando são duas cores de matiz parecida e saturação
+//      bem diferente, como roxo e rosa;
+//   5. cada grupo recebe um nome de PALETTE pela melhor combinação de matizes (namePeaks).
 import type { ColorName, DetectionResult, Dot } from './types';
 import type { Candidate, RawDetection } from './detect';
 import { circularMean, hueDist } from './color';
 
+/** Dados de uma cor de jogador: nome de tela, matiz típica e tolerância, e a cor usada na interface. */
 export interface PaletteEntry {
   label: string;
   /** Typical hue of the card colour in a white-balanced photo, degrees. */
@@ -12,8 +21,10 @@ export interface PaletteEntry {
   rgb: [number, number, number];
 }
 
+/** Ordem fixa das cores (desempate do placar e ordem dos botões de cor no editor). */
 export const COLOR_ORDER: ColorName[] = ['laranja', 'amarelo', 'verde', 'azul', 'roxo', 'rosa'];
 
+/** Cores de jogador do Tacta. `hue` e `spread` são usados só para dar nome aos grupos achados. */
 export const PALETTE: Record<ColorName, PaletteEntry> = {
   laranja: { label: 'Laranja', hue: 8, spread: 15, rgb: [236, 84, 50] },
   amarelo: { label: 'Amarelo', hue: 38, spread: 12, rgb: [245, 170, 40] },
@@ -23,12 +34,14 @@ export const PALETTE: Record<ColorName, PaletteEntry> = {
   rosa: { label: 'Rosa', hue: 338, spread: 15, rgb: [235, 80, 160] },
 };
 
+/** Um grupo de pontos de mesma cor: nome dado, matiz média e quantidade (diagnóstico em scripts/). */
 export interface HueCluster {
   name: ColorName;
   hue: number;
   count: number;
 }
 
+/** Desvio, em graus, do suavizador gaussiano do histograma de matizes. */
 const BIN_SIGMA = 5;
 
 /** Smoothed circular histogram (1° bins). */
@@ -83,6 +96,8 @@ function namePeaks(peaks: number[]): ColorName[] {
   let bestCost = Infinity;
   const used = new Set<ColorName>();
   const cur: ColorName[] = [];
+  // Busca exaustiva com poda (no máximo 6 picos x 6 nomes): testa cada nome livre para o pico k e abandona
+  // o ramo assim que o custo passa do melhor já achado.
   const rec = (k: number, cost: number) => {
     if (cost >= bestCost) return;
     if (k === peaks.length) {
@@ -104,10 +119,15 @@ function namePeaks(peaks: number[]): ColorName[] {
   return best;
 }
 
+/** DetectionResult com os grupos de cor, para os scripts de diagnóstico. */
 export interface ColoredDetection extends DetectionResult {
   clusters: HueCluster[];
 }
 
+/**
+ * Placar: quantos pontos de cada cor, do maior para o menor; empate desempata pela ordem de COLOR_ORDER.
+ * Usado aqui e pelo main.ts a cada correção manual.
+ */
 export function scoresOf(dots: Dot[], colors: ColorName[]) {
   return colors
     .map((color) => ({ color, score: dots.filter((d) => d.color === color).length }))
@@ -120,6 +140,7 @@ function planePoint(c: Candidate): [number, number] {
   return [c.ring.chroma * Math.cos(a), c.ring.chroma * Math.sin(a)];
 }
 
+/** Matiz média (circular) de um grupo de pontos, com peso pelo croma de cada anel. */
 function groupHue(g: Candidate[]): number {
   return circularMean(
     g.map((c) => c.ring.hue),
@@ -127,6 +148,7 @@ function groupHue(g: Candidate[]): number {
   ).mean;
 }
 
+/** Resultado de uma tentativa de dividir um grupo em dois (ver trySplit). */
 export interface SplitResult {
   accept: boolean;
   a: Candidate[];
@@ -137,6 +159,7 @@ export interface SplitResult {
   hueGap: number;
 }
 
+/** Exigências para aceitar a divisão de um grupo: tamanho mínimo das metades, separação, diferença de matiz e croma. */
 export const SPLIT = { minSize: 8, minSeparation: 3, minHueGap: 7, minChroma: 60, maxNameOffset: 2.2 };
 
 /**

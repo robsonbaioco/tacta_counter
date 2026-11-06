@@ -61,6 +61,8 @@ npm run icons        # regera os ícones PNG em public/ a partir de public/icon.
 
 Para calibrar com mais fotos, coloque-as em `tests/fixtures/` e a pontuação real em `expected.json`.
 
+A documentação para manutenção (arquitetura, o algoritmo de visão passo a passo, como cada parte da tela funciona, receitas de calibração e pontos frágeis) está em [`docs/`](docs/README.md). Cada arquivo de código também explica no topo o seu papel, e cada função tem um comentário dizendo o que faz.
+
 ## Publicação no GitHub Pages
 
 O workflow `.github/workflows/deploy.yml` testa, compila e publica a cada push em `main`/`master`.

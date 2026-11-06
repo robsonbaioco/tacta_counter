@@ -1,3 +1,7 @@
+// Ponto de entrada da página: liga o HTML (index.html) ao detector e ao editor.
+// Fluxo: escolher/arrastar a foto -> photo.ts decodifica -> worker.ts conta -> PhotoView (editor.ts)
+// mostra as marcações e scoreboard.ts mostra o placar. Toques na foto abrem o popover para trocar a
+// cor, remover ou adicionar ponto; cada edição vai para o histórico do Desfazer. Nada é gravado.
 import './styles.css';
 import { COLOR_ORDER, PALETTE, scoresOf, type ColorName, type DetectionResult } from './cv';
 import { loadPhoto } from './ui/photo';
@@ -6,7 +10,9 @@ import { renderScoreboard } from './ui/scoreboard';
 import { setupInstallPrompt } from './ui/install';
 import type { WorkerRequest, WorkerResponse } from './worker';
 
+/** Atalho para getElementById já com o tipo do elemento. */
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+/** Elementos do index.html usados aqui, buscados uma vez. */
 const els = {
   intro: $('intro'),
   drop: $('drop'),
@@ -27,23 +33,29 @@ const els = {
 };
 
 // ---- State: in memory only. Nothing is ever uploaded or written to storage. ----
+/** Pontos atuais (detectados + correções). */
 let dots: EditorDot[] = [];
+/** Cópias de `dots` antes de cada edição, para o Desfazer (máximo de 200). */
 let history: EditorDot[][] = [];
 let nextId = 1;
 let showMarks = true;
+/** Alvo do popover aberto: o ponto tocado ou, com dot nulo, o lugar onde um ponto será adicionado. */
 let popTarget: { dot: EditorDot | null; x: number; y: number } | null = null;
 
 const view = new PhotoView(els.stage, onTap);
 
 // ---- Worker ----
+// O Vite empacota o worker como módulo separado a partir deste `new URL(...)`.
 const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
 let requestId = 0;
+/** Promessas à espera da resposta do worker, por id do pedido. */
 const waiting = new Map<number, (r: WorkerResponse) => void>();
 worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
   waiting.get(e.data.id)?.(e.data);
   waiting.delete(e.data.id);
 };
 
+/** Mostra só uma das seções (início, "contando" ou resultado); "Nova foto" aparece fora do início. */
 function show(section: 'intro' | 'busy' | 'result') {
   els.intro.hidden = section !== 'intro';
   els.busy.hidden = section !== 'busy';
@@ -51,11 +63,16 @@ function show(section: 'intro' | 'busy' | 'result') {
   els.reset.hidden = section === 'intro';
 }
 
+/** Mostra a mensagem de erro (ou esconde, com null). */
 function showError(msg: string | null) {
   els.error.hidden = !msg;
   els.error.textContent = msg ?? '';
 }
 
+/**
+ * Processa a foto escolhida: decodifica, manda ao worker e abre o resultado. `requestId` descarta
+ * respostas de um pedido antigo se a pessoa trocou de foto ou clicou em "Nova foto" no meio.
+ */
 async function handleFile(file: File | undefined) {
   if (!file) return;
   showError(null);
@@ -81,6 +98,7 @@ async function handleFile(file: File | undefined) {
   }
 }
 
+/** Abre a tela de resultado com a foto e os pontos detectados (zera o histórico). */
 function start(photo: HTMLCanvasElement, result: DetectionResult) {
   dots = result.dots.map((d) => ({ id: nextId++, x: d.x, y: d.y, color: d.color }));
   history = [];
@@ -90,6 +108,7 @@ function start(photo: HTMLCanvasElement, result: DetectionResult) {
   if (!dots.length) showError('Não encontrei pontos nesta foto. Você pode marcá-los tocando neles, ou tentar outra foto mais nítida.');
 }
 
+/** Volta ao início, descartando a foto e os pontos da memória. */
 function reset() {
   requestId++;
   closePopover();
@@ -100,6 +119,10 @@ function reset() {
   show('intro');
 }
 
+/**
+ * Recalcula placar e total a partir de `dots` e redesenha. As cores do placar são as que têm pelo menos
+ * um ponto. `fresh` liga a animação de entrada do placar (só na primeira exibição).
+ */
 function update(fresh = false) {
   const colors = COLOR_ORDER.filter((c) => dots.some((d) => d.color === c));
   const scores = scoresOf(
@@ -112,6 +135,7 @@ function update(fresh = false) {
   view.setDots(dots);
 }
 
+/** Guarda o estado atual no histórico, aplica a mudança e atualiza a tela. */
 function edit(change: () => void) {
   history.push(dots.map((d) => ({ ...d })));
   if (history.length > 200) history.shift();
@@ -120,6 +144,10 @@ function edit(change: () => void) {
 }
 
 // ---- Tap → popover to recolour / remove / add a dot ----
+/**
+ * Toque na foto: com o popover aberto, só fecha; senão abre o popover com os botões de cor (e "Remover"
+ * se tocou num ponto), posicionado perto do toque e dentro da área da foto.
+ */
 function onTap(e: TapEvent) {
   if (popTarget) {
     closePopover();
@@ -152,6 +180,7 @@ function onTap(e: TapEvent) {
   els.popover.style.top = `${top}px`;
 }
 
+/** Botão de cor do popover: troca a cor do ponto tocado ou adiciona um ponto novo dessa cor. */
 function choose(color: ColorName) {
   const t = popTarget;
   closePopover();
@@ -164,12 +193,14 @@ function choose(color: ColorName) {
   }
 }
 
+/** Fecha o popover e tira o destaque da foto. */
 function closePopover() {
   popTarget = null;
   els.popover.hidden = true;
   view.setSelection(null);
 }
 
+// Botão "Remover ponto" do popover.
 els.popRemove.addEventListener('click', () => {
   const t = popTarget;
   closePopover();
@@ -179,6 +210,7 @@ els.popRemove.addEventListener('click', () => {
 // ---- Controls ----
 els.file.addEventListener('change', () => handleFile(els.file.files?.[0]));
 els.reset.addEventListener('click', reset);
+// Desfazer: volta para a última cópia do histórico.
 els.undo.addEventListener('click', () => {
   const prev = history.pop();
   if (!prev) return;
@@ -186,6 +218,7 @@ els.undo.addEventListener('click', () => {
   dots = prev;
   update();
 });
+// Mostrar/ocultar as marcações (para ver a foto limpa); com elas ocultas, tocar não seleciona pontos.
 els.marks.addEventListener('click', () => {
   showMarks = !showMarks;
   closePopover();
@@ -197,6 +230,7 @@ $('zoom-in').addEventListener('click', () => view.zoomBy(1.5));
 $('zoom-out').addEventListener('click', () => view.zoomBy(1 / 1.5));
 $('zoom-fit').addEventListener('click', () => view.fit());
 setupInstallPrompt($('install'), $<HTMLButtonElement>('install-accept'), $<HTMLButtonElement>('install-dismiss'));
+// Teclado: Esc fecha o popover; Ctrl/Cmd+Z desfaz.
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closePopover();
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !els.result.hidden) els.undo.click();

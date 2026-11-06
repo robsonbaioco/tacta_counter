@@ -1,3 +1,5 @@
+// Testes unitários: funções de cor (color.ts) e o detector inteiro numa "mesa" sintética desenhada
+// pixel a pixel, com cartas de três cores e contagem conhecida.
 import { describe, expect, it } from 'vitest';
 import { circularMean, hueDist, rgbToHsv } from '../src/cv/color';
 import { countDots } from '../src/cv';
@@ -28,6 +30,7 @@ describe('colour helpers', () => {
 function canvas(w: number, h: number, bg: [number, number, number]): RGBAImage & { rect: Function; disc: Function } {
   const data = new Uint8ClampedArray(w * h * 4);
   for (let i = 0; i < w * h; i++) data.set([...bg, 255], i * 4);
+  // Pinta um pixel (ignora o que cair fora da imagem).
   const put = (x: number, y: number, c: number[]) => {
     if (x >= 0 && y >= 0 && x < w && y < h) data.set([c[0], c[1], c[2], 255], (y * w + x) * 4);
   };
@@ -35,9 +38,11 @@ function canvas(w: number, h: number, bg: [number, number, number]): RGBAImage &
     width: w,
     height: h,
     data,
+    /** Retângulo cheio com canto em (x0, y0). */
     rect(x0: number, y0: number, rw: number, rh: number, c: number[]) {
       for (let y = y0; y < y0 + rh; y++) for (let x = x0; x < x0 + rw; x++) put(x, y, c);
     },
+    /** Disco cheio de raio r centrado em (cx, cy). */
     disc(cx: number, cy: number, r: number, c: number[]) {
       for (let y = Math.floor(cy - r); y <= cy + r; y++)
         for (let x = Math.floor(cx - r); x <= cx + r; x++) if ((x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= r * r) put(x, y, c);
@@ -45,6 +50,7 @@ function canvas(w: number, h: number, bg: [number, number, number]): RGBAImage &
   };
 }
 
+// Branco das marcas e preto do corpo das cartas na mesa sintética.
 const WHITE = [245, 245, 245];
 const BLACK = [22, 22, 24];
 

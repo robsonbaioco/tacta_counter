@@ -1,3 +1,6 @@
+// Preparo da foto antes da detecção: reduz o tamanho, corrige o balanço de branco e calcula os
+// "planos" por pixel (brancura, matiz, croma, brilho) que blobs.ts e classify.ts consultam.
+// boxMean é a média local usada pelo limiar adaptativo de blobs.ts.
 import type { RGBAImage } from './types';
 import { rgbToHsv } from './color';
 
@@ -88,6 +91,7 @@ export interface Planes {
   val: Uint8Array;
 }
 
+/** Calcula os planos de brancura (menor canal), matiz, croma e brilho de cada pixel da imagem. */
 export function computePlanes(img: RGBAImage): Planes {
   const n = img.width * img.height;
   const white = new Uint8Array(n);

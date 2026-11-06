@@ -1,3 +1,5 @@
+// Configuração do Vite (servidor e build), do plugin PWA (manifest + service worker gerados no build)
+// e do Vitest (seção `test`). BASE_PATH vem do workflow de deploy; o padrão é /tacta_counter/.
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 

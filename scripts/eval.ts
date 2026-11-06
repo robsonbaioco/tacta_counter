@@ -1,4 +1,7 @@
 // Runs the full detector on every fixture and compares with tests/fixtures/expected.json.
+// Avaliação: roda o detector em cada foto de tests/fixtures/ e compara com a contagem manual de
+// expected.json. Imprime, por foto, o erro por cor, o raio estimado, a cor de fundo e os grupos de
+// matiz; no fim, o erro absoluto total (quanto menor, melhor). `npm run eval`.
 import { readFileSync } from 'node:fs';
 import { readJpeg } from './nodeImage';
 import { detectCandidates } from '../src/cv/detect';

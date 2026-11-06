@@ -1,5 +1,8 @@
+// Leitura da foto escolhida: decodifica o arquivo (respeitando a rotação EXIF), reduz para o tamanho de
+// trabalho e devolve um canvas (para mostrar) e os pixels (para o worker). Usado por main.ts.
 import { WORK_MAX_SIDE, type RGBAImage } from '../cv';
 
+/** Foto carregada: o canvas para exibição e os mesmos pixels para a detecção. */
 export interface LoadedPhoto {
   /** The photo at working resolution; kept only in memory for display. */
   canvas: HTMLCanvasElement;
@@ -7,6 +10,7 @@ export interface LoadedPhoto {
   image: RGBAImage;
 }
 
+/** Decodifica o arquivo em ImageBitmap; se o navegador não aceitar a opção de orientação, tenta sem ela. */
 async function decode(file: File): Promise<ImageBitmap> {
   try {
     // Respect the EXIF rotation of phone photos.

@@ -1,5 +1,9 @@
+// Visualizador/editor da foto (classe PhotoView), usado por main.ts: desenha a foto e os círculos dos
+// pontos num canvas, faz arrastar e zoom (roda, pinça, botões) e avisa os toques com coordenadas da imagem.
+// Não altera os pontos: só desenha os que main.ts passa em setDots e reporta toques via onTap.
 import { PALETTE, type ColorName } from '../cv';
 
+/** Ponto como o editor conhece: id estável (para seleção e edição), posição na imagem e cor. */
 export interface EditorDot {
   id: number;
   x: number;
@@ -7,6 +11,7 @@ export interface EditorDot {
   color: ColorName;
 }
 
+/** Toque simples na foto (sem arrasto nem pinça): onde caiu e qual ponto marcado ficou mais perto, se algum. */
 export interface TapEvent {
   /** Image coordinates. */
   x: number;
@@ -17,6 +22,7 @@ export interface TapEvent {
   dot: EditorDot | null;
 }
 
+/** Ponto 2D genérico. */
 type Pt = { x: number; y: number };
 
 /**
@@ -32,6 +38,7 @@ export class PhotoView {
   private scale = 1;
   private tx = 0;
   private ty = 0;
+  // Se a pessoa já mexeu no zoom/posição; enquanto não mexeu, redimensionar a janela reajusta a foto à tela.
   private userMoved = false;
   private showMarks = true;
   private selected: number | null = null;
@@ -41,6 +48,7 @@ export class PhotoView {
     | { kind: 'pan'; start: Pt; tx: number; ty: number; moved: boolean }
     | { kind: 'pinch'; dist: number; mid: Pt; scale: number; tx: number; ty: number }
     | null = null;
+  // O gesto atual teve dois dedos: ao soltar, não conta como toque.
   private pinched = false;
 
   constructor(
@@ -61,6 +69,7 @@ export class PhotoView {
     this.canvas.addEventListener('wheel', (e) => this.wheel(e), { passive: false });
   }
 
+  /** Troca a foto (null = sem foto) e o raio típico dos pontos, e reajusta o enquadramento. */
   setPhoto(photo: HTMLCanvasElement | null, dotRadius = 3): void {
     this.photo = photo;
     this.dotRadius = dotRadius;
@@ -70,11 +79,13 @@ export class PhotoView {
     this.fit();
   }
 
+  /** Pontos a desenhar (main.ts chama a cada mudança). */
   setDots(dots: EditorDot[]): void {
     this.dots = dots;
     this.render();
   }
 
+  /** Liga/desliga o desenho das marcações. */
   setShowMarks(show: boolean): void {
     this.showMarks = show;
     this.render();
@@ -87,6 +98,7 @@ export class PhotoView {
     this.render();
   }
 
+  /** Enquadra a foto inteira na área disponível, centralizada. */
   fit(): void {
     const { w, h } = this.size();
     if (this.photo && w > 0 && h > 0) {
@@ -98,6 +110,7 @@ export class PhotoView {
     this.render();
   }
 
+  /** Multiplica o zoom por `factor` mantendo parado o ponto `at` da tela (o centro, se omitido). */
   zoomBy(factor: number, at?: Pt): void {
     const { w, h } = this.size();
     const c = at ?? { x: w / 2, y: h / 2 };
@@ -109,21 +122,25 @@ export class PhotoView {
     this.render();
   }
 
+  /** Tamanho da área disponível (o elemento hospedeiro), em pixels CSS. */
   private size() {
     return { w: this.host.clientWidth, h: this.host.clientHeight };
   }
 
+  /** Escala que faz a foto inteira caber na área. */
   private fitScale(): number {
     const { w, h } = this.size();
     return this.photo ? Math.min(w / this.photo.width, h / this.photo.height) : 1;
   }
 
+  /** Limita o zoom: mínimo um pouco menor que o enquadramento; máximo onde um ponto fica com ~40 px de raio. */
   private clampScale(s: number): number {
     const min = this.fitScale() * 0.8;
     const max = Math.max(min * 2, 40 / this.dotRadius);
     return Math.min(max, Math.max(min, s));
   }
 
+  /** Acompanha o tamanho do hospedeiro, com resolução multiplicada pelo devicePixelRatio (tela nítida). */
   private resize(): void {
     const dpr = window.devicePixelRatio || 1;
     const { w, h } = this.size();
@@ -135,11 +152,13 @@ export class PhotoView {
     else this.fit();
   }
 
+  /** Posição do ponteiro relativa ao canvas, em pixels CSS. */
   private local(e: PointerEvent | WheelEvent): Pt {
     const r = this.canvas.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
 
+  /** Dedo/botão abaixado: um ponteiro começa um arrasto; o segundo transforma em pinça. */
   private down(e: PointerEvent): void {
     this.canvas.setPointerCapture(e.pointerId);
     this.pointers.set(e.pointerId, this.local(e));
@@ -160,6 +179,7 @@ export class PhotoView {
     }
   }
 
+  /** Movimento: arrasta (depois de 6 px, para não confundir com toque) ou aplica a pinça. */
   private move(e: PointerEvent): void {
     if (!this.pointers.has(e.pointerId)) return;
     const p = this.local(e);
@@ -185,6 +205,7 @@ export class PhotoView {
     this.render();
   }
 
+  /** Soltou: sem ter arrastado nem pinçado, é um toque; numa pinça, o dedo que sobra continua arrastando. */
   private up(e: PointerEvent, cancelled = false): void {
     if (!this.pointers.has(e.pointerId)) return;
     const g = this.gesture;
@@ -200,11 +221,13 @@ export class PhotoView {
     }
   }
 
+  /** Roda do mouse: zoom suave em volta do cursor. */
   private wheel(e: WheelEvent): void {
     e.preventDefault();
     this.zoomBy(Math.exp(-e.deltaY * 0.0015), this.local(e));
   }
 
+  /** Converte o toque para coordenadas da imagem, acha o ponto marcado mais próximo e avisa main.ts. */
   private tap(p: Pt): void {
     if (!this.photo) return;
     const x = (p.x - this.tx) / this.scale;
@@ -226,6 +249,7 @@ export class PhotoView {
     this.onTap({ x, y, hostX: p.x, hostY: p.y, dot: best });
   }
 
+  /** Redesenha tudo: foto, círculos das marcações (contorno escuro + cor; branco no selecionado) e o lugar de um ponto novo. */
   render(): void {
     const { ctx } = this;
     const dpr = window.devicePixelRatio || 1;

@@ -1,3 +1,5 @@
+// Placar da tela de resultado: monta a lista <ol id="scores"> com posição, cor, pontos e uma barra
+// proporcional. Chamado por main.ts a cada mudança nos pontos.
 import { PALETTE, type ScoreEntry } from '../cv';
 
 /** Renders the ranking (ties share a position, e.g. 1º, 1º, 3º). `scores` must be sorted desc. */

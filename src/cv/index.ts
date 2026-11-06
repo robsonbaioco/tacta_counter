@@ -1,3 +1,5 @@
+// Porta de entrada do detector: o resto do app (worker, interface, testes) importa daqui.
+// Liga as duas etapas: detect.ts (acha os pontos) e palette.ts (decide as cores e soma o placar).
 import type { DetectionResult, RGBAImage } from './types';
 import { detectCandidates } from './detect';
 import { assignColors } from './palette';

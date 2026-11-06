@@ -2,8 +2,10 @@
 // whenever the browser reports the app as installable, show our own card whose button opens the native
 // install dialog. Dismissing it lasts until the next visit: nothing is written to storage.
 
+/** O evento beforeinstallprompt do Chrome (não está nos tipos padrão do TypeScript). */
 type InstallPromptEvent = Event & { prompt(): Promise<void> };
 
+/** Liga o cartão "Instalar o Contador Tacta" do index.html aos eventos de instalação do navegador. */
 export function setupInstallPrompt(card: HTMLElement, accept: HTMLButtonElement, dismiss: HTMLButtonElement) {
   let deferred: InstallPromptEvent | null = null;
 

@@ -22,6 +22,7 @@ console.log('scores', result.scores.map((e) => `${e.color}=${e.score}`).join('  
 
 const view = cropScale(image, x0, y0, w, h, s);
 
+/** Desenha uma circunferência de espessura `thick` direto nos pixels da imagem. */
 function circle(img: RGBAImage, cx: number, cy: number, r: number, rgb: number[], thick: number) {
   for (let y = Math.floor(cy - r - thick); y <= cy + r + thick; y++) {
     for (let x = Math.floor(cx - r - thick); x <= cx + r + thick; x++) {
@@ -37,6 +38,7 @@ function circle(img: RGBAImage, cx: number, cy: number, r: number, rgb: number[]
   }
 }
 
+// Cor atribuída a cada ponto aceito, achada pela posição (os pontos do resultado são cópias dos candidatos).
 const dotColor = new Map(result.dots.map((d) => [`${d.x},${d.y}`, PALETTE[d.color].rgb]));
 for (const c of candidates) {
   const cx = (c.x - x0) * s, cy = (c.y - y0) * s;

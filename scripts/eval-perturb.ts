@@ -1,12 +1,16 @@
 // Checks that results are stable under small photometric changes (brightness, colour cast, noise),
 // standing in for differences between JPEG decoders, cameras and lighting.
+// Parte de `npm run eval:robust`: refaz a avaliação com a foto mais escura, mais clara, quente, fria e com
+// ruído. COLORS! indica que o conjunto de cores mudou (o pior tipo de erro).
 import { readFileSync } from 'node:fs';
 import { readJpeg } from './nodeImage';
 import { countDots } from '../src/cv';
 import type { RGBAImage } from '../src/cv/types';
 
+/** Cópia da imagem com ganho por canal e ruído pseudoaleatório (semente fixa: resultado reproduzível). */
 function perturb(img: RGBAImage, gain: [number, number, number], noise: number, seed = 1): RGBAImage {
   let s = seed;
+  // Gerador congruencial linear simples, de -1 a 1: com a mesma semente, o ruído é sempre o mesmo.
   const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff - 0.5) * 2;
   const out = new Uint8ClampedArray(img.data.length);
   for (let i = 0; i < img.data.length; i += 4) {

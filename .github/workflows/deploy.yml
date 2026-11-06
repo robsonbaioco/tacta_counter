@@ -1,3 +1,5 @@
+# Publica no GitHub Pages a cada push em main/master (ou manualmente): instala, roda os testes,
+# compila com BASE_PATH = /<nome do repositório>/ e envia o dist/. Se um teste falhar, nada é publicado.
 name: Deploy to GitHub Pages
 
 on:

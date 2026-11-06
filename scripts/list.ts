@@ -1,4 +1,6 @@
 // Usage: tsx scripts/list.ts <photo> <jsExpr on c>   e.g. "c.extent>=4 && c.extent<6 && c.region<10"
+// Lista os candidatos que satisfazem uma expressão JavaScript sobre `c` (um Candidate de detect.ts),
+// com todas as medidas. Útil para achar exemplos ao ajustar um limiar.
 import { readJpeg } from './nodeImage';
 import { detectCandidates } from '../src/cv/detect';
 const [, , file, expr] = process.argv;

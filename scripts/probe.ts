@@ -1,5 +1,7 @@
 // Usage: tsx scripts/probe.ts <photo.jpg> x,y [x,y ...]   (working-resolution coordinates)
 // Prints the detector features of the candidates nearest to each point.
+// Mostra as medidas dos dois candidatos mais próximos de cada coordenada informada: para entender por
+// que um ponto específico foi aceito ou recusado (coordenadas da imagem de trabalho, como no debug.ts).
 import { readJpeg } from './nodeImage';
 import { detectCandidates } from '../src/cv/detect';
 
