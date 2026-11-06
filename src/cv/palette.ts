@@ -259,7 +259,7 @@ export function assignColors(raw: RawDetection): ColoredDetection {
   const names = namePeaks(groupHues);
   const dots: Dot[] = [];
   groups.forEach((g, k) => {
-    for (const c of g) dots.push({ x: c.x, y: c.y, r: c.r, color: names[k], confidence: Math.min(1, c.ring.colored * c.ring.uniform) });
+    for (const c of g) dots.push({ x: c.x, y: c.y, r: c.r, color: names[k] });
   });
   const clusters = groups.map((g, k) => ({ name: names[k], hue: groupHues[k], count: g.length }));
   const colors = COLOR_ORDER.filter((n) => names.includes(n));

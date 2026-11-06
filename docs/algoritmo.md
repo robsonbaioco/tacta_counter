@@ -139,7 +139,7 @@ O detector não sabe quantas pessoas jogaram nem com que cores: descobre pela fo
 
 O `rgb` de cada cor em `PALETTE` é só a cor desenhada na interface; não entra na detecção.
 
-7. **Resultado**: cada ponto recebe o nome do seu grupo e uma `confidence` (`colored × uniform` do anel, até 1; hoje a interface não usa). `scoresOf` conta os pontos por cor e ordena do maior para o menor (empate: ordem de `COLOR_ORDER`).
+7. **Resultado**: cada ponto recebe o nome do seu grupo (a interface não mostra grau de confiança por ponto: quem confere a foto corrige os erros tocando nos pontos). `scoresOf` conta os pontos por cor e ordena do maior para o menor (empate: ordem de `COLOR_ORDER`).
 
 ## Desempenho
 

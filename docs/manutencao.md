@@ -65,11 +65,10 @@ Edite `public/icon.svg` e rode `npm run icons`: regera os PNG de `public/` (64, 
 
 ## Pontos frágeis conhecidos
 
-- **Calibração com poucas fotos**: são duas fotos com contagem e uma sem. Os limiares podem estar ajustados demais para essas mesas e câmeras; foto nova que falha é material para `tests/fixtures/`.
-- **Os scripts e o app decodificam o JPEG de jeitos diferentes** (`jpeg-js` no Node, o navegador na página, que ainda reduz a foto com `drawImage` em vez de `limitSize`). As cores podem variar um pouco: é para isso que existem os testes de mudança de cor e o `eval:robust`. Um resultado do `eval` não é garantia do mesmo número exato no celular.
-- **Máximo de 6 cores**: com mais picos, os mais próximos são fundidos. Um objeto colorido grande sobre a mesa pode virar um "pico" e tomar um nome; o teste de área (`background`) só pega os acinzentados.
-- **Nomes só pela matiz**: se só houver cores vizinhas (por exemplo laranja e rosa), uma delas pode receber o nome da outra numa luz muito diferente. A pessoa corrige pela troca de cor, mas a troca é ponto a ponto.
-- **`confidence`** é calculada mas não é usada pela interface.
-- **Buffer transferido**: depois do `postMessage` em `handleFile`, `photo.image.data` fica vazio na página. Qualquer código novo que precise dos pixels na página deve usar o canvas (`photo.canvas`) ou copiar os dados antes de enviar.
-- **Memória**: uma foto de 2400 px ocupa dezenas de MB entre RGBA, planos e buffers do `RegionMeter`. Aumentar `WORK_MAX_SIDE` pode estourar a memória em celulares simples.
-- **Versão nova só na próxima abertura**: por causa do `autoUpdate` sem recarregar a página, quem acabou de publicar e abriu o app pode ver a versão anterior uma vez.
+- **Calibração com poucas fotos**: são duas fotos com contagem e uma sem. Os limiares podem estar ajustados demais para essas mesas e câmeras; foto nova que falha é material para `tests/fixtures/`. Continua: precisa de mais fotos reais.
+- **Os scripts e o app decodificam o JPEG de jeitos diferentes** (`jpeg-js` no Node, o navegador na página, que ainda reduz a foto com `drawImage` em vez de `limitSize`). As cores podem variar um pouco: é para isso que existem os testes de mudança de cor e o `eval:robust`. Um resultado do `eval` não é garantia do mesmo número exato no celular. Continua: limitação conhecida, coberta pelos testes de robustez.
+- **Máximo de 6 cores**: com mais picos, os mais próximos são fundidos. Um objeto colorido grande sobre a mesa pode virar um "pico" e tomar um nome; o teste de área (`background`) só pega os acinzentados. Continua: limite do método de detecção.
+- **Nomes só pela matiz**: se só houver cores vizinhas (por exemplo laranja e rosa), uma delas pode receber o nome da outra numa luz muito diferente. A pessoa corrige pela troca de cor, mas a troca é ponto a ponto. Continua: trocar uma cor inteira de uma vez seria funcionalidade nova (decisão de produto).
+- **Buffer transferido**: depois do `postMessage` em `handleFile`, `photo.image.data` fica vazio na página. Qualquer código novo que precise dos pixels na página deve usar o canvas (`photo.canvas`) ou copiar os dados antes de enviar. Continua: é regra de manutenção (enviar sem cópia economiza memória).
+- **Memória**: uma foto de 2400 px ocupa dezenas de MB entre RGBA, planos e buffers do `RegionMeter`. Aumentar `WORK_MAX_SIDE` pode estourar a memória em celulares simples. Continua: regra de manutenção.
+- **Versão nova só na próxima abertura**: por causa do `autoUpdate` sem recarregar a página, quem acabou de publicar e abriu o app pode ver a versão anterior uma vez. Continua: comportamento escolhido (não recarrega a página no meio de uma contagem).

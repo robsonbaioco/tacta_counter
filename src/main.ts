@@ -126,7 +126,7 @@ function reset() {
 function update(fresh = false) {
   const colors = COLOR_ORDER.filter((c) => dots.some((d) => d.color === c));
   const scores = scoresOf(
-    dots.map((d) => ({ ...d, r: 0, confidence: 1 })),
+    dots.map((d) => ({ ...d, r: 0 })),
     colors,
   );
   renderScoreboard(els.scores, scores, fresh);

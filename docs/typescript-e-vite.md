@@ -29,8 +29,6 @@ export interface Dot {
   y: number;
   r: number;
   color: ColorName;
-  /** 0..1, how sure the detector is this is a real dot of this color. */
-  confidence: number;
 }
 ```
 
